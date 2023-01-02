@@ -1,0 +1,8 @@
+[package]
+name = "blockp2p"
+version = "0.1.0"
+description = "Fast blockchain broadcast with scalable p2p network topology"
+authors = ["Kobby Pentangeli <kobbypentangeli@gmail.com>"]
+edition = "2021"
+
+[dependencies]
