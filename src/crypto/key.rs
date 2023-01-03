@@ -3,7 +3,7 @@ use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
 /// BLS public key
 #[derive(Debug, Clone, PartialEq, Copy)]
-pub struct PublicKey(bls_signatures::PublicKey);
+pub struct PublicKey(pub bls_signatures::PublicKey);
 
 impl PublicKey {
     /// Generates a `PublicKey` from bytes
@@ -15,7 +15,7 @@ impl PublicKey {
     }
 
     /// Convert a `PublicKey` to bytes
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         use bls_signatures::Serialize;
         self.0.as_bytes()
     }
@@ -23,7 +23,7 @@ impl PublicKey {
 
 /// BLS private key
 #[derive(Debug, Clone, PartialEq, Copy)]
-pub struct PrivateKey(bls_signatures::PrivateKey);
+pub struct PrivateKey(pub bls_signatures::PrivateKey);
 
 impl PrivateKey {
     /// Generates a `PrivateKey` from bytes
@@ -35,7 +35,7 @@ impl PrivateKey {
     }
 
     /// Convert a `PrivateKey` to bytes
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         use bls_signatures::Serialize;
         self.0.as_bytes()
     }
@@ -52,16 +52,13 @@ impl PrivateKey {
     }
 }
 
-struct PublicKeyVisitor;
-struct PrivateKeyVisitor;
-
 //************************** impl Serialize */
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&self.to_bytes())
+        serializer.serialize_bytes(&self.as_bytes())
     }
 }
 
@@ -70,7 +67,7 @@ impl Serialize for PrivateKey {
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&self.to_bytes())
+        serializer.serialize_bytes(&self.as_bytes())
     }
 }
 
@@ -94,6 +91,9 @@ impl<'de> Deserialize<'de> for PrivateKey {
 }
 
 //************************** impl Visitor */
+struct PublicKeyVisitor;
+struct PrivateKeyVisitor;
+
 impl<'de> Visitor<'de> for PublicKeyVisitor {
     type Value = PublicKey;
 
