@@ -6,3 +6,5 @@ authors = ["Kobby Pentangeli <kobbypentangeli@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+blake2b_simd = "1"
+serde = { version = "1", features = ["derive"] }
