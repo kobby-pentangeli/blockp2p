@@ -1,4 +1,4 @@
-use crate::crypto::key::PublicKey;
+use crate::crypto::signature::PublicKey;
 use ed25519_dalek::PublicKey as SigningPublicKey;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use x25519_dalek::PublicKey as EncryptionPublicKey;

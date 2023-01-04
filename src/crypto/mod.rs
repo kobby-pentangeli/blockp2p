@@ -2,7 +2,5 @@
 pub mod blake;
 /// Generic hash implementation
 pub mod hash;
-/// BLS public and private key implementation
-pub mod key;
-/// BLS signature implementation
+/// `BLSTTC` PublicKey, PrivateKey, and Signature implementation
 pub mod signature;
