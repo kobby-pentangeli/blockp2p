@@ -1,28 +1,42 @@
 use qp2p::Config as QuicConfig;
-use std::{
-    collections::{hash_set::Iter, HashSet},
-    net::SocketAddr,
-};
+use std::net::SocketAddr;
 use structopt::StructOpt;
 
 /// Configuration of a p2p node
 #[derive(StructOpt, Debug, Default, Clone)]
 #[structopt(rename_all = "kebab-case")]
 pub struct Config {
-    /// Bootstrap nodes
-    #[structopt(short, long, default_value = "[]", parse(try_from_str = serde_json::from_str))]
-    bootstrap_nodes: HashSet<SocketAddr>,
+    /// Identity of a node.
+    /// A random one is created if `None` is specified.
+    #[structopt(short, long)]
+    identity: Option<String>,
+    /// Is this node the genesis node?
+    #[structopt(short, long)]
+    genesis: bool,
     /// QUIC config
     #[structopt(flatten)]
     quic: QuicConfig,
     /// Deploy agent
     #[structopt(short, long)]
     deploy_agent: bool,
+    /// Bootstrap nodes
+    #[structopt(short, long, default_value = "[]", parse(try_from_str = serde_json::from_str))]
+    bootstrap_nodes: Vec<SocketAddr>,
 }
 
 impl Config {
+    /// Checks if node is genesis node
+    pub fn is_genesis_node(&self) -> bool {
+        self.genesis
+    }
+
+    /// Retrieves the identity of a node
+    pub fn identity(&self) -> &Option<String> {
+        &self.identity
+    }
+
     /// Retrieve the QUIC configuration
-    pub fn get_quic_config(&self) -> &QuicConfig {
+    pub fn quic_config(&self) -> &QuicConfig {
         &self.quic
     }
 
@@ -31,13 +45,13 @@ impl Config {
         self.quic = config;
     }
 
-    /// Retrieve bootstrap nodes
-    pub fn get_bootstrap_nodes(&self) -> Iter<SocketAddr> {
+    /// Retrieves bootstrap nodes
+    pub fn bootstrap_nodes(&self) -> std::slice::Iter<SocketAddr> {
         self.bootstrap_nodes.iter()
     }
 
     /// Get a mutable reference to the bootstrap nodes
-    pub fn bootstrap_nodes_mut(&mut self) -> &mut HashSet<SocketAddr> {
+    pub fn bootstrap_nodes_mut(&mut self) -> &mut Vec<SocketAddr> {
         &mut self.bootstrap_nodes
     }
 
@@ -47,11 +61,6 @@ impl Config {
         P: IntoIterator<Item = SocketAddr>,
     {
         self.bootstrap_nodes.extend(peers);
-    }
-
-    /// Allow an agent to be deployed
-    pub fn deploy_agent(&mut self) {
-        self.deploy_agent = true;
     }
 
     /// Checks if an agent should be deployed from this node
