@@ -1,140 +1,50 @@
 use crate::{BlockP2pError, BlockP2pResult};
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+use blsttc::{serde_impl::SerdeSecret, PK_SIZE, SK_SIZE};
+use serde::{Deserialize, Serialize};
 
-/// BLS public key
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub struct PublicKey(pub bls_signatures::PublicKey);
+/// A `blsttc` public key
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
+pub struct PublicKey(pub blsttc::PublicKey);
 
 impl PublicKey {
     /// Generates a `PublicKey` from bytes
-    pub fn from_bytes(data: &[u8]) -> BlockP2pResult<Self> {
-        use bls_signatures::Serialize;
-        let pk = bls_signatures::PublicKey::from_bytes(data)
+    pub fn from_bytes(data: [u8; PK_SIZE]) -> BlockP2pResult<Self> {
+        let pk = blsttc::PublicKey::from_bytes(data)
             .map_err(|e| BlockP2pError::BlsPublicKeyError(e.to_string()))?;
         Ok(Self(pk))
     }
 
     /// Convert a `PublicKey` to bytes
-    pub fn as_bytes(&self) -> Vec<u8> {
-        use bls_signatures::Serialize;
-        self.0.as_bytes()
+    pub fn as_bytes(&self) -> [u8; PK_SIZE] {
+        self.0.to_bytes()
     }
 }
 
-/// BLS private key
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub struct PrivateKey(pub bls_signatures::PrivateKey);
+/// A `blsttc` private key
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PrivateKey(pub SerdeSecret<blsttc::SecretKey>);
 
 impl PrivateKey {
     /// Generates a `PrivateKey` from bytes
-    pub fn from_bytes(data: &[u8]) -> BlockP2pResult<Self> {
-        use bls_signatures::Serialize;
-        let pk = bls_signatures::PrivateKey::from_bytes(data)
+    pub fn from_bytes(data: [u8; SK_SIZE]) -> BlockP2pResult<Self> {
+        let sk = blsttc::SecretKey::from_bytes(data)
             .map_err(|e| BlockP2pError::BlsPrivateKeyError(e.to_string()))?;
-        Ok(Self(pk))
+        Ok(Self(SerdeSecret(sk)))
     }
 
     /// Convert a `PrivateKey` to bytes
-    pub fn as_bytes(&self) -> Vec<u8> {
-        use bls_signatures::Serialize;
-        self.0.as_bytes()
+    pub fn as_bytes(&self) -> [u8; SK_SIZE] {
+        self.0.to_bytes()
     }
 
     /// Generates a random `PrivateKey`
     pub fn random() -> Self {
-        let mut rng = rand::thread_rng();
-        Self(bls_signatures::PrivateKey::generate(&mut rng))
+        Self(SerdeSecret(blsttc::SecretKey::random()))
     }
 
     /// Retrieves the associated `PublicKey` of this `PrivateKey`
     pub fn public_key(&self) -> PublicKey {
         PublicKey(self.0.public_key())
-    }
-}
-
-//************************** impl Serialize */
-impl Serialize for PublicKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_bytes(&self.as_bytes())
-    }
-}
-
-impl Serialize for PrivateKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_bytes(&self.as_bytes())
-    }
-}
-
-//************************** impl Deserialize */
-impl<'de> Deserialize<'de> for PublicKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_bytes(PublicKeyVisitor)
-    }
-}
-
-impl<'de> Deserialize<'de> for PrivateKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_bytes(PrivateKeyVisitor)
-    }
-}
-
-//************************** impl Visitor */
-struct PublicKeyVisitor;
-struct PrivateKeyVisitor;
-
-impl<'de> Visitor<'de> for PublicKeyVisitor {
-    type Value = PublicKey;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a signature byte array")
-    }
-
-    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        PublicKey::from_bytes(v).map_err(|e| E::custom(e.to_string()))
-    }
-
-    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        PublicKey::from_bytes(v.as_bytes()).map_err(|e| E::custom(e.to_string()))
-    }
-}
-
-impl<'de> Visitor<'de> for PrivateKeyVisitor {
-    type Value = PrivateKey;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a signature byte array")
-    }
-
-    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        PrivateKey::from_bytes(v).map_err(|e| E::custom(e.to_string()))
-    }
-
-    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        PrivateKey::from_bytes(v.as_bytes()).map_err(|e| E::custom(e.to_string()))
     }
 }
 
