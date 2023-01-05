@@ -1,7 +1,8 @@
-use crate::crypto::signature::PublicKey;
-use ed25519_dalek::PublicKey as SigningPublicKey;
+use crate::crypto::{
+    keys::{EncryptionPublicKey, SigningPublicKey},
+    signature::PublicKey,
+};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use x25519_dalek::PublicKey as EncryptionPublicKey;
 
 /// Represents the public identity of a node
 #[derive(Debug, Copy, Clone, PartialEq)]
