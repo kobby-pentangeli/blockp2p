@@ -1,4 +1,3 @@
-use crate::{BlockP2pError, BlockP2pResult};
 use bytebuffer::ByteBuffer;
 use rand::{thread_rng, Rng};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
@@ -14,13 +13,6 @@ impl Hash {
     /// Creates a `Hash` from bytes
     pub fn from_bytes(data: &[u8]) -> Self {
         Self(blake3::hash(data))
-    }
-
-    /// Create a `Hash` for any serializable data
-    pub fn serialize<S: Serialize>(data: &S) -> BlockP2pResult<Self> {
-        let ser = bincode::serialize(data)
-            .map_err(|e| BlockP2pError::SerializeHashError(e.to_string()))?;
-        Ok(Self(blake3::hash(&ser)))
     }
 
     /// Generates a random `Hash`

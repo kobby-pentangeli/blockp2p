@@ -1,1 +1,2 @@
-mod routing;
+/// Implements a routing table.
+pub mod routing;
