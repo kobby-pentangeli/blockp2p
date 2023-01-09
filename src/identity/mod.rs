@@ -7,7 +7,6 @@ use crate::crypto::{
 pub mod public_id;
 
 /// Identity of a p2p node
-#[allow(dead_code, clippy::new_without_default)]
 pub struct Identity {
     secret_key: PrivateKey,
     public_key: PublicKey,

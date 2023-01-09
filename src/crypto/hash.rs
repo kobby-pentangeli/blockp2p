@@ -1,7 +1,7 @@
 use crate::{BlockP2pError, BlockP2pResult};
 use bytebuffer::ByteBuffer;
 use rand::{thread_rng, Rng};
-use serde::Serialize;
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
 const DISPLAY_HASH_LEN: usize = 4;
 const RANDOM_HASH_BUF: usize = 4096;
@@ -11,8 +11,8 @@ const RANDOM_HASH_BUF: usize = 4096;
 pub struct Hash(pub blake3::Hash);
 
 impl Hash {
-    /// Creates a new `Hash` from bytes
-    pub fn new(data: &[u8]) -> Self {
+    /// Creates a `Hash` from bytes
+    pub fn from_bytes(data: &[u8]) -> Self {
         Self(blake3::hash(data))
     }
 
@@ -81,5 +81,47 @@ impl std::fmt::Debug for Hash {
             s.push_str(&format!("{:02X}", self.as_ref()[32 - i]));
         }
         write!(f, "{}", s)
+    }
+}
+
+struct HashVisitor;
+
+impl Serialize for Hash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(self.0.as_bytes())
+    }
+}
+
+impl<'de> Visitor<'de> for HashVisitor {
+    type Value = Hash;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a hash byte array")
+    }
+
+    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Hash::from_bytes(v))
+    }
+
+    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Hash::from_bytes(v.as_bytes()))
+    }
+}
+
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(HashVisitor)
     }
 }
