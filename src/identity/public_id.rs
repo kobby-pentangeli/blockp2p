@@ -1,7 +1,4 @@
-use crate::crypto::{
-    keys::{EncryptionPublicKey, SigningPublicKey},
-    signature::PublicKey,
-};
+use crate::crypto::{signature::PublicKey, EncryptionPublicKey, SigningPublicKey};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Represents the public identity of a node

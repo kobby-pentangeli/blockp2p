@@ -23,7 +23,7 @@ impl SharedRoutingTable {
 
     /// Get shared routing information for a node.
     pub fn shared_routing_info(&self, node_id: &Hash) -> Option<usize> {
-        self.entries.get(node_id).map(|hops| *hops)
+        self.entries.get(node_id).copied()
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::{
     crypto::{
-        keys::{EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey},
         signature::{PrivateKey, PublicKey, Signature},
+        EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey,
     },
     BlockP2pResult,
 };
@@ -19,6 +19,12 @@ pub struct Identity {
     encryption_public_key: EncryptionPublicKey,
     signing_secret_key: SigningSecretKey,
     signing_public_key: SigningPublicKey,
+}
+
+impl Default for Identity {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Identity {
@@ -113,8 +119,10 @@ impl<'de> Deserialize<'de> for Identity {
             public_key,
             encryption_secret_key: EncryptionSecretKey::from(encryption_secret_key_bytes),
             encryption_public_key: EncryptionPublicKey::from(encryption_public_key_bytes),
-            signing_public_key: SigningPublicKey::from_bytes(&signing_public_key_bytes).unwrap(),
-            signing_secret_key: SigningSecretKey::from_bytes(&signing_secret_key_bytes).unwrap(),
+            signing_public_key: SigningPublicKey::from_bytes(&signing_public_key_bytes)
+                .expect("Failed to create an `ed25519_dalek` public key"),
+            signing_secret_key: SigningSecretKey::from_bytes(&signing_secret_key_bytes)
+                .expect("Failed to create an `ed25519_dalek` secret key"),
         })
     }
 }
