@@ -1,6 +1,6 @@
 /// All error types
 #[derive(Debug, thiserror::Error)]
-pub enum BlockP2pError {
+pub enum Error {
     /// Errors associated with BLS public keys
     #[error("{0}")]
     BlsPublicKeyError(String),

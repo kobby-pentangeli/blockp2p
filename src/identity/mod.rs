@@ -3,7 +3,7 @@ use crate::{
         signature::{PrivateKey, PublicKey, Signature},
         EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey,
     },
-    BlockP2pResult,
+    Error,
 };
 use public_id::PublicId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -35,7 +35,7 @@ impl Identity {
 
     /// Verify that a message was sent from peer to `Self`,
     /// using authenticated encryption.
-    pub fn verify_message(&self, _peer_id: PublicId, _msgg: &[u8]) -> BlockP2pResult<Vec<u8>> {
+    pub fn verify_message(&self, _peer_id: PublicId, _msgg: &[u8]) -> Result<Vec<u8>, Error> {
         todo!()
     }
 
@@ -50,7 +50,7 @@ impl Identity {
     }
 
     /// Verify a message's signature
-    pub fn verify_signature(&self, _msg: &[u8], _sig: &Signature) -> BlockP2pResult<()> {
+    pub fn verify_signature(&self, _msg: &[u8], _sig: &Signature) -> Result<(), Error> {
         todo!()
     }
 
@@ -74,12 +74,12 @@ impl Identity {
     }
 
     /// Encode a node's identity into a string.
-    pub fn encode_id(&self) -> BlockP2pResult<String> {
+    pub fn encode_id(&self) -> Result<String, Error> {
         todo!()
     }
 
     /// Decode a node's identity from a string.
-    pub fn decode_id(_encoded_id: &str) -> BlockP2pResult<Self> {
+    pub fn decode_id(_encoded_id: &str) -> Result<Self, Error> {
         todo!()
     }
 }
