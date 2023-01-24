@@ -38,7 +38,7 @@ pub enum Message {
     /// Message from an agent
     AgentMessage {
         /// Agent payload
-        payload: Vec<(Hash, Message, usize)>,
+        payload: Vec<(Keys, Vec<u8>)>,
     },
 
     /// Routing information

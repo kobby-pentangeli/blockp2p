@@ -1,6 +1,4 @@
 use crate::{
-    connection::routing::RoutingTable,
-    crypto::hash::Hash,
     error::Error,
     event::Event,
     identity::{keys::Keys, Identity},
@@ -11,16 +9,12 @@ use ed25519_dalek::Signature;
 use ed25519_dalek::Verifier;
 use message::Message;
 use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    net::SocketAddr,
-};
+use rand::Rng;
+use std::net::SocketAddr;
 
 /// Types of peer-to-peer messages
 pub mod message;
 
-// Time to live
-const TTL: usize = 5;
 const OUTBOX_COPIES: usize = 3;
 
 /// Messaging functionality
@@ -41,12 +35,24 @@ impl Messaging {
 
     /// Send an ordinary message to a peer
     pub fn send_message(&mut self, dst: &Keys, message: &[u8]) -> Result<(), Error> {
-        todo!()
+        self.outbox.push((
+            *dst,
+            bincode::serialize(&Message::UserMessage(message.to_vec()))?,
+            OUTBOX_COPIES,
+        ));
+        Ok(())
     }
 
     /// Send a message to a peer using public key encryption
     pub fn send_encrypted_message(&mut self, dst: &Keys, message: &[u8]) -> Result<(), Error> {
-        todo!()
+        let cypher_text = dst.public_key.0.encrypt(message);
+        let cypher_bytes = bincode::serialize(&cypher_text)?;
+        self.outbox.push((
+            *dst,
+            bincode::serialize(&Message::EncryptedMessage(cypher_bytes))?,
+            OUTBOX_COPIES,
+        ));
+        Ok(())
     }
 
     /// Send a message to a peer using authenticated encryption
@@ -56,7 +62,16 @@ impl Messaging {
         dst: &Keys,
         message: &[u8],
     ) -> Result<(), Error> {
-        todo!()
+        let cypher_bytes = self_id.authenticate_message(dst, message);
+        self.outbox.push((
+            *dst,
+            bincode::serialize(&Message::AuthenticatedMessage {
+                message: cypher_bytes,
+                sender: self_id.keys(),
+            })?,
+            OUTBOX_COPIES,
+        ));
+        Ok(())
     }
 
     /// Sign a message and send it
@@ -66,26 +81,81 @@ impl Messaging {
         dst: &Keys,
         message: &[u8],
     ) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn send_pending_messages(
-        &mut self,
-        active_connections: &[&SocketAddr],
-        quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
-        todo!()
+        let signature = self_id.sign_message(message);
+        self.outbox.push((
+            *dst,
+            bincode::serialize(&Message::SignedMessage {
+                message: message.to_vec(),
+                signature: signature.as_bytes().to_vec(),
+                sender: self_id.keys(),
+            })?,
+            OUTBOX_COPIES,
+        ));
+        Ok(())
     }
 
     /// Send agent message
-    pub fn send_agent_message(
+    pub async fn send_agent_message(
         &mut self,
         mut payload: Vec<(Keys, Vec<u8>)>,
         active_connections: &[&SocketAddr],
         first: bool,
         quic: &mut QuicConnection,
     ) -> Result<(), Error> {
-        todo!()
+        if active_connections.is_empty() {
+            log::error!("No active connections!");
+            return Ok(());
+        }
+        self.send_pending_messages(active_connections, quic).await?;
+        let _ = self
+            .outbox
+            .iter_mut()
+            .map(|(a, b, c)| {
+                payload.push((*a, b.to_vec()));
+                let _ = std::mem::replace(c, *c - 1);
+            })
+            .collect::<Vec<()>>();
+
+        self.outbox.retain(|(_, _, count)| *count > 0);
+        let mut rng = rand::thread_rng();
+        let rand_val = rng.gen_range(0..active_connections.len());
+        if let Some(addr) = active_connections.get(rand_val) {
+            let user_msg_bytes = (
+                Bytes::from("Agent message"),
+                Bytes::from(addr.to_string()),
+                Bytes::from(bincode::serialize(&Message::AgentMessage { payload })?),
+            );
+            quic.send(user_msg_bytes).await?;
+            if first {
+                log::debug!("Agent deployed to: {:?}", addr);
+            }
+        }
+        Ok(())
+    }
+
+    async fn send_pending_messages(
+        &mut self,
+        active_connections: &[&SocketAddr],
+        quic: &mut QuicConnection,
+    ) -> Result<(), Error> {
+        if self.pending.is_empty() || active_connections.is_empty() {
+            log::error!("No pending messages or active connections!");
+            return Ok(());
+        }
+        let conn_len = active_connections.len();
+        let mut rng = rand::thread_rng();
+        while let Some((msg, tag)) = self.pending.pop() {
+            let rand_val = rng.gen_range(0..conn_len);
+            if let Some(addr) = active_connections.get(rand_val) {
+                let user_msg_bytes = (
+                    Bytes::from(tag.to_string()),
+                    Bytes::from(addr.to_string()),
+                    msg,
+                );
+                quic.send(user_msg_bytes).await?;
+            }
+        }
+        Ok(())
     }
 
     /// Add an unsent message to the list of pending messages.
@@ -95,7 +165,7 @@ impl Messaging {
     }
 
     /// Process message
-    pub fn handle_agent_message(
+    pub async fn handle_agent_message(
         &mut self,
         self_id: &Identity,
         peer: &mut QuicEndpoint,
@@ -104,7 +174,17 @@ impl Messaging {
         quic: &mut QuicConnection,
         tx: &Sender<Event>,
     ) -> Result<(), Error> {
-        todo!()
+        let self_pub_keys = self_id.keys();
+        let mut forward = vec![];
+        while let Some((target_keys, msg)) = payload.pop() {
+            if target_keys == self_pub_keys {
+                self.handle_message(peer, msg, self_id, tx)?;
+            } else {
+                forward.push((target_keys, msg));
+            }
+        }
+        self.send_agent_message(forward, active_connections, false, quic)
+            .await
     }
 
     fn handle_message(

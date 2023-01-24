@@ -85,13 +85,10 @@ impl Connection {
             let user_msg_bytes = (
                 Bytes::from("Routing information"),
                 Bytes::from(socket_addr.to_string()),
-                Bytes::from(
-                    bincode::serialize(&Message::RoutingTable {
-                        shared_routing_table: routing_table.get_shared(),
-                        source: *self_id,
-                    })
-                    .map_err(|e| Error::BincodeSerializeError(e.to_string()))?,
-                ),
+                Bytes::from(bincode::serialize(&Message::RoutingTable {
+                    shared_routing_table: routing_table.get_shared(),
+                    source: *self_id,
+                })?),
             );
             quic.send(user_msg_bytes).await?;
         }
@@ -166,10 +163,7 @@ impl Connection {
             let user_msg_bytes = (
                 Bytes::from("Public identity"),
                 Bytes::from(peer_addr.to_string()),
-                Bytes::from(
-                    bincode::serialize(&Message::Identification(*self_id))
-                        .map_err(|e| Error::BincodeSerializeError(e.to_string()))?,
-                ),
+                Bytes::from(bincode::serialize(&Message::Identification(*self_id))?),
             );
             quic.send(user_msg_bytes).await?;
 
@@ -193,10 +187,7 @@ impl Connection {
             let user_msg_bytes = (
                 Bytes::from("Contacts"),
                 Bytes::from(peer_addr.to_string()),
-                Bytes::from(
-                    bincode::serialize(&Message::Contacts(connections))
-                        .map_err(|e| Error::BincodeSerializeError(e.to_string()))?,
-                ),
+                Bytes::from(bincode::serialize(&Message::Contacts(connections))?),
             );
             quic.send_with(user_msg_bytes, 1).await?;
             return Ok(());
@@ -207,10 +198,7 @@ impl Connection {
             let user_msg_bytes = (
                 Bytes::from("Public identity"),
                 Bytes::from(peer_addr.to_string()),
-                Bytes::from(
-                    bincode::serialize(&Message::Identification(*self_id))
-                        .map_err(|e| Error::BincodeSerializeError(e.to_string()))?,
-                ),
+                Bytes::from(bincode::serialize(&Message::Identification(*self_id))?),
             );
             quic.send(user_msg_bytes).await?;
         }
