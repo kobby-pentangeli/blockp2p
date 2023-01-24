@@ -50,5 +50,3 @@ pub mod identity;
 pub mod messaging;
 /// Functionality of a node on the network
 pub mod node;
-
-pub use error::Error;

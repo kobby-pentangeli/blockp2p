@@ -3,13 +3,13 @@ use crate::{
         signature::{PrivateKey, PublicKey, Signature},
         EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey,
     },
-    Error,
+    error::Error,
 };
-use public_id::PublicId;
+use keys::Keys;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// Implements the public identity of a node
-pub mod public_id;
+/// The various public keys belonging to a node
+pub mod keys;
 
 /// Identity of a p2p node
 pub struct Identity {
@@ -35,12 +35,12 @@ impl Identity {
 
     /// Verify that a message was sent from peer to `Self`,
     /// using authenticated encryption.
-    pub fn verify_message(&self, _peer_id: PublicId, _msgg: &[u8]) -> Result<Vec<u8>, Error> {
+    pub fn verify_message(&self, _peer_id: Keys, _msgg: &[u8]) -> Result<Vec<u8>, Error> {
         todo!()
     }
 
     /// Encrypt a message using authenticated encryption
-    pub fn authenticate_message(&self, _peer_id: &PublicId, _msgg: &[u8]) -> Vec<u8> {
+    pub fn authenticate_message(&self, _peer_id: &Keys, _msgg: &[u8]) -> Vec<u8> {
         todo!()
     }
 
@@ -65,8 +65,8 @@ impl Identity {
     }
 
     /// Get the public identity of this node.
-    pub fn public_id(&self) -> PublicId {
-        PublicId {
+    pub fn public_id(&self) -> Keys {
+        Keys {
             public_key: self.public_key,
             encryption_public_key: self.encryption_public_key,
             signing_public_key: self.signing_public_key,

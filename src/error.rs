@@ -30,6 +30,10 @@ pub enum Error {
     /// Serialization errors
     #[error("{0}")]
     BincodeSerializeError(String),
+
+    /// No routing information found for this node
+    #[error("No routing information found for this node")]
+    NoRoutingInformation,
 }
 
 impl From<qp2p::SendError> for Error {

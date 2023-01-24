@@ -1,9 +1,9 @@
 use crate::crypto::{signature::PublicKey, EncryptionPublicKey, SigningPublicKey};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// Represents the public identity of a node
+/// Represents the various public keys belonging to a node
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct PublicId {
+pub struct Keys {
     /// Public key for asymmetric encryption
     pub public_key: PublicKey,
     /// Public key for symmetric encryption
@@ -12,7 +12,7 @@ pub struct PublicId {
     pub signing_public_key: SigningPublicKey,
 }
 
-impl Serialize for PublicId {
+impl Serialize for Keys {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -26,7 +26,7 @@ impl Serialize for PublicId {
     }
 }
 
-impl<'de> Deserialize<'de> for PublicId {
+impl<'de> Deserialize<'de> for Keys {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

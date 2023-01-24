@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error::Error;
 use blsttc::{serde_impl::SerdeSecret, PK_SIZE, SIG_SIZE, SK_SIZE};
 use serde::{Deserialize, Serialize};
 
