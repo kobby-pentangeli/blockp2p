@@ -35,12 +35,12 @@ impl Identity {
 
     /// Verify that a message was sent from peer to `Self`,
     /// using authenticated encryption.
-    pub fn verify_message(&self, _peer_id: Keys, _msgg: &[u8]) -> Result<Vec<u8>, Error> {
+    pub fn verify_message(&self, _peer_id: Keys, _msg: &[u8]) -> Result<Vec<u8>, Error> {
         todo!()
     }
 
     /// Encrypt a message using authenticated encryption
-    pub fn authenticate_message(&self, _peer_id: &Keys, _msgg: &[u8]) -> Vec<u8> {
+    pub fn authenticate_message(&self, _peer_id: &Keys, _msg: &[u8]) -> Vec<u8> {
         todo!()
     }
 
@@ -64,8 +64,8 @@ impl Identity {
         &self.encryption_public_key
     }
 
-    /// Get the public identity of this node.
-    pub fn public_id(&self) -> Keys {
+    /// Get the set of public keys for this node.
+    pub fn keys(&self) -> Keys {
         Keys {
             public_key: self.public_key,
             encryption_public_key: self.encryption_public_key,
@@ -80,6 +80,16 @@ impl Identity {
 
     /// Decode a node's identity from a string.
     pub fn decode_id(_encoded_id: &str) -> Result<Self, Error> {
+        todo!()
+    }
+
+    /// Encrypt a message using the node's public key
+    pub fn encrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+
+    /// Decrypt a message using the node's secret key
+    pub fn decrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>, Error> {
         todo!()
     }
 }
