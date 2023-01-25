@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::Result;
 use blsttc::{serde_impl::SerdeSecret, PK_SIZE, SIG_SIZE, SK_SIZE};
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +18,7 @@ impl Signature {
     }
 
     /// Creates a `Signature` from bytes
-    pub fn from_bytes(data: [u8; SIG_SIZE]) -> Result<Self, Error> {
+    pub fn from_bytes(data: [u8; SIG_SIZE]) -> Result<Self> {
         let sig = blsttc::Signature::from_bytes(data)?;
         Ok(Self(sig))
     }
@@ -40,7 +40,7 @@ pub struct PublicKey(pub blsttc::PublicKey);
 
 impl PublicKey {
     /// Generates a `PublicKey` from bytes
-    pub fn from_bytes(data: [u8; PK_SIZE]) -> Result<Self, Error> {
+    pub fn from_bytes(data: [u8; PK_SIZE]) -> Result<Self> {
         let pk = blsttc::PublicKey::from_bytes(data)?;
         Ok(Self(pk))
     }
@@ -57,7 +57,7 @@ pub struct PrivateKey(pub SerdeSecret<blsttc::SecretKey>);
 
 impl PrivateKey {
     /// Generates a `PrivateKey` from bytes
-    pub fn from_bytes(data: [u8; SK_SIZE]) -> Result<Self, Error> {
+    pub fn from_bytes(data: [u8; SK_SIZE]) -> Result<Self> {
         let sk = blsttc::SecretKey::from_bytes(data)?;
         Ok(Self(SerdeSecret(sk)))
     }

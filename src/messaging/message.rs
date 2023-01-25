@@ -1,4 +1,4 @@
-use crate::{connection::routing::SharedRoutingTable, crypto::hash::Hash, identity::keys::Keys};
+use crate::{crypto::hash::Hash, Keys, SharedRoutingTable};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 

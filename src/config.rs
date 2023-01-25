@@ -1,4 +1,3 @@
-use qp2p::Config as QuicConfig;
 use std::net::SocketAddr;
 use structopt::StructOpt;
 
@@ -13,9 +12,6 @@ pub struct Config {
     /// Is this node the genesis node?
     #[structopt(short, long)]
     genesis: bool,
-    /// QUIC config
-    #[structopt(flatten)]
-    quic: QuicConfig,
     /// Deploy agent
     #[structopt(short, long)]
     deploy_agent: bool,
@@ -33,16 +29,6 @@ impl Config {
     /// Retrieves the identity of a node
     pub fn identity(&self) -> &Option<String> {
         &self.identity
-    }
-
-    /// Retrieve the QUIC configuration
-    pub fn quic_config(&self) -> &QuicConfig {
-        &self.quic
-    }
-
-    /// Set the QUIC  configuration
-    pub fn set_quic_config(&mut self, config: QuicConfig) {
-        self.quic = config;
     }
 
     /// Retrieves bootstrap nodes

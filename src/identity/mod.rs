@@ -3,9 +3,8 @@ use crate::{
         signature::{PrivateKey, PublicKey, Signature},
         EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey,
     },
-    error::Error,
+    Keys, Result,
 };
-use keys::Keys;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The various public keys belonging to a node
@@ -35,7 +34,7 @@ impl Identity {
 
     /// Verify that a message was sent from peer to `Self`,
     /// using authenticated encryption.
-    pub fn verify_message(&self, _peer_id: Keys, _msg: &[u8]) -> Result<Vec<u8>, Error> {
+    pub fn verify_message(&self, _peer_id: Keys, _msg: &[u8]) -> Result<Vec<u8>> {
         todo!()
     }
 
@@ -50,7 +49,7 @@ impl Identity {
     }
 
     /// Verify a message's signature
-    pub fn verify_signature(&self, _msg: &[u8], _sig: &Signature) -> Result<(), Error> {
+    pub fn verify_signature(&self, _msg: &[u8], _sig: &Signature) -> Result<()> {
         todo!()
     }
 
@@ -74,28 +73,28 @@ impl Identity {
     }
 
     /// Encode a node's identity into a string.
-    pub fn encode_id(&self) -> Result<String, Error> {
+    pub fn encode_id(&self) -> Result<String> {
         todo!()
     }
 
     /// Decode a node's identity from a string.
-    pub fn decode_id(_encoded_id: &str) -> Result<Self, Error> {
+    pub fn decode_id(_encoded_id: &str) -> Result<Self> {
         todo!()
     }
 
     /// Encrypt a message using the node's public key
-    pub fn encrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>, Error> {
+    pub fn encrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>> {
         todo!()
     }
 
     /// Decrypt a message using the node's secret key
-    pub fn decrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>, Error> {
+    pub fn decrypt_message(&self, _data: &[u8]) -> Result<Vec<u8>> {
         todo!()
     }
 }
 
 impl Serialize for Identity {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -112,7 +111,7 @@ impl Serialize for Identity {
 }
 
 impl<'de> Deserialize<'de> for Identity {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {

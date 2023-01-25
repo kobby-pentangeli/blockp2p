@@ -50,3 +50,15 @@ pub mod identity;
 pub mod messaging;
 /// Functionality of a node on the network
 pub mod node;
+
+pub use config::Config;
+pub use connection::{
+    routing::{RoutingTable, SharedRoutingTable},
+    Connection,
+};
+pub use event::Event;
+pub use identity::{keys::Keys, Identity};
+pub use messaging::{message::Message, Messaging};
+
+/// Result wrapper
+pub type Result<T> = std::result::Result<T, error::Error>;

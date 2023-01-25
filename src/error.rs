@@ -1,4 +1,4 @@
-use crate::event::Event;
+use crate::Event;
 
 /// All error types
 #[derive(Debug, thiserror::Error)]

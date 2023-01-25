@@ -1,13 +1,7 @@
-use crate::{
-    error::Error,
-    event::Event,
-    identity::{keys::Keys, Identity},
-};
+use crate::{Event, Identity, Keys, Message, Result};
 use bytes::Bytes;
 use crossbeam_channel::Sender;
-use ed25519_dalek::Signature;
-use ed25519_dalek::Verifier;
-use message::Message;
+use ed25519_dalek::{Signature, Verifier};
 use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
 use rand::Rng;
 use std::net::SocketAddr;
@@ -34,7 +28,7 @@ impl Messaging {
     }
 
     /// Send an ordinary message to a peer
-    pub fn send_message(&mut self, dst: &Keys, message: &[u8]) -> Result<(), Error> {
+    pub fn send_message(&mut self, dst: &Keys, message: &[u8]) -> Result<()> {
         self.outbox.push((
             *dst,
             bincode::serialize(&Message::UserMessage(message.to_vec()))?,
@@ -44,7 +38,7 @@ impl Messaging {
     }
 
     /// Send a message to a peer using public key encryption
-    pub fn send_encrypted_message(&mut self, dst: &Keys, message: &[u8]) -> Result<(), Error> {
+    pub fn send_encrypted_message(&mut self, dst: &Keys, message: &[u8]) -> Result<()> {
         let cypher_text = dst.public_key.0.encrypt(message);
         let cypher_bytes = bincode::serialize(&cypher_text)?;
         self.outbox.push((
@@ -61,7 +55,7 @@ impl Messaging {
         self_id: &Identity,
         dst: &Keys,
         message: &[u8],
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let cypher_bytes = self_id.authenticate_message(dst, message);
         self.outbox.push((
             *dst,
@@ -80,7 +74,7 @@ impl Messaging {
         self_id: &Identity,
         dst: &Keys,
         message: &[u8],
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let signature = self_id.sign_message(message);
         self.outbox.push((
             *dst,
@@ -101,7 +95,7 @@ impl Messaging {
         active_connections: &[&SocketAddr],
         first: bool,
         quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         if active_connections.is_empty() {
             log::error!("No active connections!");
             return Ok(());
@@ -137,7 +131,7 @@ impl Messaging {
         &mut self,
         active_connections: &[&SocketAddr],
         quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         if self.pending.is_empty() || active_connections.is_empty() {
             log::error!("No pending messages or active connections!");
             return Ok(());
@@ -159,7 +153,7 @@ impl Messaging {
     }
 
     /// Add an unsent message to the list of pending messages.
-    pub fn handle_unsent_message(&mut self, msg: Bytes, tag: u64) -> Result<(), Error> {
+    pub fn handle_unsent_message(&mut self, msg: Bytes, tag: u64) -> Result<()> {
         self.pending.push((msg, tag));
         Ok(())
     }
@@ -173,7 +167,7 @@ impl Messaging {
         active_connections: &[&SocketAddr],
         quic: &mut QuicConnection,
         tx: &Sender<Event>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let self_pub_keys = self_id.keys();
         let mut forward = vec![];
         while let Some((target_keys, msg)) = payload.pop() {
@@ -193,21 +187,17 @@ impl Messaging {
         msg: Vec<u8>,
         self_id: &Identity,
         tx: &Sender<Event>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         match bincode::deserialize::<Message>(&msg) {
             Ok(Message::UserMessage(content)) => {
-                log::trace!(
-                    "Peer at {:?} sent: {:?}",
-                    &peer.public_addr(),
-                    &content[..4]
-                );
+                log::trace!("Peer at {:?} sent: {:?}", &peer.local_addr(), &content[..4]);
                 tx.send(Event::NewMessage(content))?;
                 Ok(())
             }
             Ok(Message::EncryptedMessage(content)) => {
                 log::trace!(
                     "Peer at {:?} sent an encrypted message: {:?}",
-                    &peer.public_addr(),
+                    &peer.local_addr(),
                     &content[..4]
                 );
                 let decrypted_msg = self_id.decrypt_message(&content)?;
@@ -217,7 +207,7 @@ impl Messaging {
             Ok(Message::AuthenticatedMessage { message, sender }) => {
                 log::warn!(
                     "Peer at {:?} sent an authenticated message: {:?}",
-                    &peer.public_addr(),
+                    &peer.local_addr(),
                     &message[..4]
                 );
                 let verified_msg = self_id.verify_message(sender, &message)?;
@@ -231,7 +221,7 @@ impl Messaging {
             }) => {
                 log::trace!(
                     "Peer at {:?} sent a signed message: {:?}",
-                    &peer.public_addr(),
+                    &peer.local_addr(),
                     &message[..4]
                 );
                 if let Ok(signature) = Signature::from_bytes(&signature) {

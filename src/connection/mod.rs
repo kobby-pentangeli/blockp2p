@@ -1,8 +1,7 @@
-use crate::{crypto::hash::Hash, error::Error, event::Event, messaging::message::Message};
+use crate::{crypto::hash::Hash, Event, Message, Result, RoutingTable, SharedRoutingTable};
 use bytes::Bytes;
 use crossbeam_channel::Sender;
 use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
-use routing::{RoutingTable, SharedRoutingTable};
 use std::{
     collections::{hash_map::Entry, HashMap},
     net::SocketAddr,
@@ -40,7 +39,7 @@ impl Connection {
         peer_id: &Hash,
         shared_table: SharedRoutingTable,
         quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let _ = shared_table
             .shared_entries()
             .keys()
@@ -79,7 +78,7 @@ impl Connection {
         &mut self,
         quic: &mut QuicConnection,
         self_id: &Hash,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let routing_table = self.routing_table();
         for socket_addr in self.active_connections().values() {
             let user_msg_bytes = (
@@ -103,8 +102,8 @@ impl Connection {
         peer_id: &Hash,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
-        let peer_addr = peer.public_addr();
+    ) -> Result<()> {
+        let peer_addr = peer.local_addr();
         log::debug!(
             "Peer at {:?} has identified itself as {:?}",
             &peer_addr,
@@ -139,7 +138,7 @@ impl Connection {
         &mut self,
         info: &ConnectionInfo,
         quic: &mut QuicEndpoint,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         log::trace!("Connecting to: {:?}", info);
         let _ = self.entries.insert(
             info.socket_addr,
@@ -156,8 +155,8 @@ impl Connection {
         peer: &mut QuicEndpoint,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
-    ) -> Result<(), Error> {
-        let peer_addr = peer.public_addr();
+    ) -> Result<()> {
+        let peer_addr = peer.local_addr();
         let mut connected = false;
         if let Some((public_identity, state)) = self.entries.get_mut(&peer_addr) {
             let user_msg_bytes = (
@@ -213,8 +212,8 @@ impl Connection {
         &mut self,
         quic: &mut QuicEndpoint,
         err_msg: &str,
-    ) -> Result<(), Error> {
-        let peer_addr = quic.public_addr();
+    ) -> Result<()> {
+        let peer_addr = quic.local_addr();
         log::info!(
             "Lost connection with peer at {:?} due to {}",
             &peer_addr,
@@ -236,11 +235,7 @@ impl Connection {
     }
 
     /// Bootstrap to the network using all our contacts
-    pub async fn bootstrap(
-        &mut self,
-        nodes: &[SocketAddr],
-        quic: &mut QuicEndpoint,
-    ) -> Result<(), Error> {
+    pub async fn bootstrap(&mut self, nodes: &[SocketAddr], quic: &mut QuicEndpoint) -> Result<()> {
         for node in nodes {
             if self.entries.len() == MAX_CONNECTION_LEN {
                 break;
@@ -258,7 +253,7 @@ impl Connection {
         &mut self,
         socket_addr: &SocketAddr,
         quic: &mut QuicEndpoint,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let _ = self
             .entries
             .insert(*socket_addr, (None, ConnectionState::Connecting));
