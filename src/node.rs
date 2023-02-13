@@ -1,7 +1,8 @@
 use crate::{
     connection::utils::{ConnectionInfo, ConnectionMap},
-    Config, Connection, Event, Identity, Messaging, Result,
+    Config, Connection, Event, Identity, Messaging, PublicId, Result,
 };
+use bytes::Bytes;
 use crossbeam_channel::{Receiver, Select, Sender};
 use qp2p::Endpoint as QuicEndpoint;
 use std::net::SocketAddr;
@@ -38,14 +39,27 @@ impl Node {
         ))
     }
 
-    /// Handle an incoming node event
-    pub fn handle_incoming_event(&mut self) -> Result<()> {
-        todo!()
-    }
-
     /// Fetch map of connections.
     pub fn connections(&self) -> &ConnectionMap {
         self.connection.connections()
+    }
+
+    /// Retrieves the connection information
+    pub fn connection_info(&self, quic: &QuicEndpoint) -> ConnectionInfo {
+        ConnectionInfo {
+            public_id: self.identity.public_id(),
+            socket_addr: quic.local_addr(),
+        }
+    }
+
+    /// Bootstrap to the network using all contacts
+    pub async fn bootstrap(&mut self, quic: &mut QuicEndpoint) -> Result<()> {
+        let nodes = self
+            .config
+            .bootstrap_nodes()
+            .cloned()
+            .collect::<Vec<SocketAddr>>();
+        self.connection.bootstrap(&nodes, quic).await
     }
 
     /// Bootstrap with a peer.
@@ -73,5 +87,39 @@ impl Node {
     /// Register a selector for events
     pub fn register_selector<'a>(&'a mut self, selector: &mut Select<'a>) -> usize {
         selector.recv(&self.channel_rx)
+    }
+
+    /// Send a message to a peer
+    pub fn send_message(&mut self, dst: &PublicId, msg: &[u8]) -> Result<()> {
+        log::trace!("Sending message to {:?}", dst);
+        self.messaging.send_message(dst, msg)
+    }
+
+    /// Send a message to a peer using public-key encryption
+    pub fn send_encrypted_message(&mut self, dst: &PublicId, msg: &[u8]) -> Result<()> {
+        log::trace!("Sending encrypted message to {:?}", dst);
+        self.messaging.send_encrypted_message(dst, msg)
+    }
+
+    /// Send a message to a peer using authenticated encryption
+    pub fn send_authenticated_message(&mut self, dst: &PublicId, msg: &[u8]) -> Result<()> {
+        log::trace!("Sending authenticated message to {:?}", dst);
+        self.messaging
+            .send_authenticated_message(&self.identity, dst, msg)
+    }
+
+    /// Send a message along with a signature
+    pub fn send_signed_message(&mut self, dst: &PublicId, msg: &[u8]) -> Result<()> {
+        log::trace!("Sending signed message to {:?}", dst);
+        self.messaging.send_signed_message(&self.identity, dst, msg)
+    }
+
+    /// Handle an incoming node event
+    pub fn handle_incoming_event(&mut self) -> Result<()> {
+        todo!()
+    }
+
+    fn handle_incoming_message(&mut self, peer: &mut QuicEndpoint, msg: &Bytes) -> Result<()> {
+        todo!()
     }
 }
