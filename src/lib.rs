@@ -57,7 +57,7 @@ pub use connection::{
     Connection,
 };
 pub use event::Event;
-pub use identity::{keys::Keys, Identity};
+pub use identity::{public_id::PublicId, Identity};
 pub use messaging::{message::Message, Messaging};
 
 /// Result wrapper

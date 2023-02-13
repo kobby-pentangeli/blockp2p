@@ -1,17 +1,19 @@
 use crate::{
     crypto::{
+        hash::Hash,
         signature::{PrivateKey, PublicKey, Signature},
         EncryptionPublicKey, EncryptionSecretKey, SigningPublicKey, SigningSecretKey,
     },
-    Keys, Result,
+    PublicId, Result,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The various public keys belonging to a node
-pub mod keys;
+pub mod public_id;
 
 /// Identity of a p2p node
 pub struct Identity {
+    node_id: Hash,
     secret_key: PrivateKey,
     public_key: PublicKey,
     encryption_secret_key: EncryptionSecretKey,
@@ -34,12 +36,12 @@ impl Identity {
 
     /// Verify that a message was sent from peer to `Self`,
     /// using authenticated encryption.
-    pub fn verify_message(&self, _peer_id: Keys, _msg: &[u8]) -> Result<Vec<u8>> {
+    pub fn verify_message(&self, _peer_id: PublicId, _msg: &[u8]) -> Result<Vec<u8>> {
         todo!()
     }
 
     /// Encrypt a message using authenticated encryption
-    pub fn authenticate_message(&self, _peer_id: &Keys, _msg: &[u8]) -> Vec<u8> {
+    pub fn authenticate_message(&self, _peer_id: &PublicId, _msg: &[u8]) -> Vec<u8> {
         todo!()
     }
 
@@ -64,8 +66,9 @@ impl Identity {
     }
 
     /// Get the set of public keys for this node.
-    pub fn keys(&self) -> Keys {
-        Keys {
+    pub fn public_id(&self) -> PublicId {
+        PublicId {
+            node_id: self.node_id,
             public_key: self.public_key,
             encryption_public_key: self.encryption_public_key,
             signing_public_key: self.signing_public_key,
@@ -116,14 +119,24 @@ impl<'de> Deserialize<'de> for Identity {
         D: Deserializer<'de>,
     {
         let (
+            node_id,
             secret_key,
             public_key,
             encryption_secret_key_bytes,
             encryption_public_key_bytes,
             signing_secret_key_bytes,
             signing_public_key_bytes,
-        ): (_, _, [u8; 32], [u8; 32], [u8; 32], [u8; 32]) = Deserialize::deserialize(deserializer)?;
+        ): (
+            Hash,
+            PrivateKey,
+            PublicKey,
+            [u8; 32],
+            [u8; 32],
+            [u8; 32],
+            [u8; 32],
+        ) = Deserialize::deserialize(deserializer)?;
         Ok(Identity {
+            node_id,
             secret_key,
             public_key,
             encryption_secret_key: EncryptionSecretKey::from(encryption_secret_key_bytes),

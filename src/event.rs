@@ -1,4 +1,4 @@
-use crate::crypto::hash::Hash;
+use crate::PublicId;
 
 /// Types of peer-to-peer events
 #[derive(Debug, PartialEq)]
@@ -7,5 +7,5 @@ pub enum Event {
     NewMessage(Vec<u8>),
 
     /// Events regarding a successful connection
-    ConnectedTo(Hash),
+    ConnectedTo(PublicId),
 }

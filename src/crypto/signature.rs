@@ -3,7 +3,7 @@ use blsttc::{serde_impl::SerdeSecret, PK_SIZE, SIG_SIZE, SK_SIZE};
 use serde::{Deserialize, Serialize};
 
 /// A `blsttc` signature
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq)]
 pub struct Signature(pub blsttc::Signature);
 
 impl Signature {
@@ -35,7 +35,7 @@ impl Signature {
 }
 
 /// A `blsttc` public key
-#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize, Eq)]
 pub struct PublicKey(pub blsttc::PublicKey);
 
 impl PublicKey {
@@ -52,7 +52,7 @@ impl PublicKey {
 }
 
 /// A `blsttc` private key
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq)]
 pub struct PrivateKey(pub SerdeSecret<blsttc::SecretKey>);
 
 impl PrivateKey {

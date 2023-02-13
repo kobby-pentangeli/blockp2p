@@ -1,4 +1,6 @@
-use crate::{crypto::hash::Hash, Event, Message, Result, RoutingTable, SharedRoutingTable};
+use crate::{
+    crypto::hash::Hash, Event, Message, PublicId, Result, RoutingTable, SharedRoutingTable,
+};
 use bytes::Bytes;
 use crossbeam_channel::Sender;
 use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
@@ -97,9 +99,9 @@ impl Connection {
     /// Handle a node-identification message from a peer.
     pub async fn handle_node_identification(
         &mut self,
-        self_id: &Hash,
+        self_id: &PublicId,
         peer: &mut QuicEndpoint,
-        peer_id: &Hash,
+        peer_id: &PublicId,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
     ) -> Result<()> {
@@ -118,16 +120,17 @@ impl Connection {
 
                 sender.send(Event::ConnectedTo(*peer_id))?;
 
-                let _ = self.active_connections.insert(*peer_id, peer_addr);
-                self.routing_table.add_direct_connection(peer_id);
+                let _ = self.active_connections.insert(peer_id.node_id, peer_addr);
+                self.routing_table.add_direct_connection(&peer_id.node_id);
                 self.routing_table.increment_version();
                 connected = true;
+
                 log::debug!("Successfully connected with peer at {:?}", peer_addr);
                 log::debug!("Our connections: {:?}", &self.entries);
             }
         }
         if connected {
-            self.share_routing_table(quic, self_id).await?;
+            self.share_routing_table(quic, &self_id.node_id).await?;
         }
         Ok(())
     }
@@ -142,7 +145,7 @@ impl Connection {
         log::trace!("Connecting to: {:?}", info);
         let _ = self.entries.insert(
             info.socket_addr,
-            (Some(info.hash), ConnectionState::Connecting),
+            (Some(info.public_id), ConnectionState::Connecting),
         );
         let _ = quic.connect_to(&info.socket_addr).await?;
         Ok(())
@@ -168,11 +171,11 @@ impl Connection {
 
             if let Some(id) = public_identity {
                 let _ = std::mem::replace(state, ConnectionState::Connected);
-                let _ = self.active_connections.insert(*id, peer_addr);
+                let _ = self.active_connections.insert(id.node_id, peer_addr);
 
                 sender.send(Event::ConnectedTo(*id))?;
 
-                self.routing_table.add_direct_connection(id);
+                self.routing_table.add_direct_connection(&id.node_id);
                 self.routing_table.increment_version();
                 connected = true;
                 log::debug!("Successfully connected with peer at {:?}", peer_addr);

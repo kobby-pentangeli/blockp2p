@@ -1,4 +1,4 @@
-use crate::{Event, Identity, Keys, Message, Result};
+use crate::{Event, Identity, Message, PublicId, Result};
 use bytes::Bytes;
 use crossbeam_channel::Sender;
 use ed25519_dalek::{Signature, Verifier};
@@ -14,7 +14,7 @@ const OUTBOX_COPIES: usize = 3;
 /// Messaging functionality
 #[derive(Debug, Default, Clone)]
 pub struct Messaging {
-    outbox: Vec<(Keys, Vec<u8>, usize)>,
+    outbox: Vec<(PublicId, Vec<u8>, usize)>,
     pending: Vec<(Bytes, u64)>,
 }
 
@@ -28,7 +28,7 @@ impl Messaging {
     }
 
     /// Send an ordinary message to a peer
-    pub fn send_message(&mut self, dst: &Keys, message: &[u8]) -> Result<()> {
+    pub fn send_message(&mut self, dst: &PublicId, message: &[u8]) -> Result<()> {
         self.outbox.push((
             *dst,
             bincode::serialize(&Message::UserMessage(message.to_vec()))?,
@@ -38,7 +38,7 @@ impl Messaging {
     }
 
     /// Send a message to a peer using public key encryption
-    pub fn send_encrypted_message(&mut self, dst: &Keys, message: &[u8]) -> Result<()> {
+    pub fn send_encrypted_message(&mut self, dst: &PublicId, message: &[u8]) -> Result<()> {
         let cypher_text = dst.public_key.0.encrypt(message);
         let cypher_bytes = bincode::serialize(&cypher_text)?;
         self.outbox.push((
@@ -53,7 +53,7 @@ impl Messaging {
     pub fn send_authenticated_message(
         &mut self,
         self_id: &Identity,
-        dst: &Keys,
+        dst: &PublicId,
         message: &[u8],
     ) -> Result<()> {
         let cypher_bytes = self_id.authenticate_message(dst, message);
@@ -61,7 +61,7 @@ impl Messaging {
             *dst,
             bincode::serialize(&Message::AuthenticatedMessage {
                 message: cypher_bytes,
-                sender: self_id.keys(),
+                sender: self_id.public_id(),
             })?,
             OUTBOX_COPIES,
         ));
@@ -72,7 +72,7 @@ impl Messaging {
     pub fn send_signed_message(
         &mut self,
         self_id: &Identity,
-        dst: &Keys,
+        dst: &PublicId,
         message: &[u8],
     ) -> Result<()> {
         let signature = self_id.sign_message(message);
@@ -81,7 +81,7 @@ impl Messaging {
             bincode::serialize(&Message::SignedMessage {
                 message: message.to_vec(),
                 signature: signature.as_bytes().to_vec(),
-                sender: self_id.keys(),
+                sender: self_id.public_id(),
             })?,
             OUTBOX_COPIES,
         ));
@@ -91,7 +91,7 @@ impl Messaging {
     /// Send agent message
     pub async fn send_agent_message(
         &mut self,
-        mut payload: Vec<(Keys, Vec<u8>)>,
+        mut payload: Vec<(PublicId, Vec<u8>)>,
         active_connections: &[&SocketAddr],
         first: bool,
         quic: &mut QuicConnection,
@@ -163,18 +163,18 @@ impl Messaging {
         &mut self,
         self_id: &Identity,
         peer: &mut QuicEndpoint,
-        mut payload: Vec<(Keys, Vec<u8>)>,
+        mut payload: Vec<(PublicId, Vec<u8>)>,
         active_connections: &[&SocketAddr],
         quic: &mut QuicConnection,
         tx: &Sender<Event>,
     ) -> Result<()> {
-        let self_pub_keys = self_id.keys();
+        let self_pub_id = self_id.public_id();
         let mut forward = vec![];
-        while let Some((target_keys, msg)) = payload.pop() {
-            if target_keys == self_pub_keys {
+        while let Some((target_pub_id, msg)) = payload.pop() {
+            if target_pub_id == self_pub_id {
                 self.handle_message(peer, msg, self_id, tx)?;
             } else {
-                forward.push((target_keys, msg));
+                forward.push((target_pub_id, msg));
             }
         }
         self.send_agent_message(forward, active_connections, false, quic)

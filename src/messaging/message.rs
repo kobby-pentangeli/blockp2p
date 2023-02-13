@@ -1,4 +1,4 @@
-use crate::{crypto::hash::Hash, Keys, SharedRoutingTable};
+use crate::{crypto::hash::Hash, PublicId, SharedRoutingTable};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -16,7 +16,7 @@ pub enum Message {
         /// Message
         message: Vec<u8>,
         /// Public identity of the sender
-        sender: Keys,
+        sender: PublicId,
     },
 
     /// A signed message
@@ -26,7 +26,7 @@ pub enum Message {
         /// Signature
         signature: Vec<u8>,
         /// Public identity of the sender
-        sender: Keys,
+        sender: PublicId,
     },
 
     /// Message regarding the identification of a node
@@ -38,7 +38,7 @@ pub enum Message {
     /// Message from an agent
     AgentMessage {
         /// Agent payload
-        payload: Vec<(Keys, Vec<u8>)>,
+        payload: Vec<(PublicId, Vec<u8>)>,
     },
 
     /// Routing information

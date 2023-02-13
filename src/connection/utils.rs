@@ -1,8 +1,8 @@
-use crate::crypto::hash::Hash;
+use crate::PublicId;
 use std::{collections::HashMap, net::SocketAddr};
 
 /// Map of all connections
-pub type ConnectionMap = HashMap<SocketAddr, (Option<Hash>, ConnectionState)>;
+pub type ConnectionMap = HashMap<SocketAddr, (Option<PublicId>, ConnectionState)>;
 
 /// Connection state
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -18,8 +18,8 @@ pub enum ConnectionState {
 /// Connection information for a node
 #[derive(Debug, Clone, Copy)]
 pub struct ConnectionInfo {
-    /// Hash of the node
-    pub hash: Hash,
+    /// Public identity of the node
+    pub public_id: PublicId,
     /// Address of the node
     pub socket_addr: SocketAddr,
 }
