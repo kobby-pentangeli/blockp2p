@@ -30,7 +30,7 @@ pub enum Message {
     },
 
     /// Message regarding the identification of a node
-    Identification(Hash),
+    Identification(PublicId),
 
     /// Message from contacts
     Contacts(Vec<SocketAddr>),

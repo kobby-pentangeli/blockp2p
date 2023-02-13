@@ -154,7 +154,7 @@ impl Connection {
     /// Handle a successful incoming connection.
     pub async fn handle_successful_connection(
         &mut self,
-        self_id: &Hash,
+        self_id: &PublicId,
         peer: &mut QuicEndpoint,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
@@ -205,7 +205,7 @@ impl Connection {
             quic.send(user_msg_bytes).await?;
         }
         if connected {
-            self.share_routing_table(quic, self_id).await?;
+            self.share_routing_table(quic, &self_id.node_id).await?;
         }
         Ok(())
     }
