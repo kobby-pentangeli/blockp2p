@@ -1,10 +1,10 @@
 use crate::{
     connection::utils::{ConnectionInfo, ConnectionMap},
-    Config, Connection, Event, Identity, Messaging, PublicId, Result,
+    Config, Connection, Event, Identity, Message, Messaging, PublicId, Result,
 };
 use bytes::Bytes;
 use crossbeam_channel::{Receiver, Select, Sender};
-use qp2p::Endpoint as QuicEndpoint;
+use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
 use std::net::SocketAddr;
 
 /// Representation of a peer-to-peer node
@@ -119,7 +119,12 @@ impl Node {
         todo!()
     }
 
-    fn handle_incoming_message(&mut self, peer: &mut QuicEndpoint, msg: &Bytes) -> Result<()> {
+    async fn handle_incoming_message(
+        &mut self,
+        peer: &mut QuicEndpoint,
+        msg: &Bytes,
+        quic: &mut QuicConnection,
+    ) -> Result<()> {
         todo!()
     }
 }

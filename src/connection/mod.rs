@@ -22,6 +22,7 @@ pub struct Connection {
     entries: ConnectionMap,
     active_connections: HashMap<Hash, SocketAddr>,
     routing_table: RoutingTable,
+    is_bootstrapped: bool,
 }
 
 impl Connection {
@@ -31,6 +32,7 @@ impl Connection {
             entries: Default::default(),
             active_connections: Default::default(),
             routing_table: Default::default(),
+            is_bootstrapped: false,
         }
     }
 
@@ -97,14 +99,15 @@ impl Connection {
     }
 
     /// Handle a node-identification message from a peer.
-    pub async fn handle_node_identification(
+    /// Returns `true` if an agent should be deployed.
+    pub async fn handle_peer_identification(
         &mut self,
         self_id: &PublicId,
         peer: &mut QuicEndpoint,
         peer_id: &PublicId,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let peer_addr = peer.local_addr();
         log::debug!(
             "Peer at {:?} has identified itself as {:?}",
@@ -129,10 +132,13 @@ impl Connection {
                 log::debug!("Our connections: {:?}", &self.entries);
             }
         }
-        if connected {
+        if connected && !self.is_bootstrapped() {
+            self.set_bootstrapped();
             self.share_routing_table(quic, &self_id.node_id).await?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        Ok(())
     }
 
     /// Connect to a peer.
@@ -158,7 +164,7 @@ impl Connection {
         peer: &mut QuicEndpoint,
         sender: &Sender<Event>,
         quic: &mut QuicConnection,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let peer_addr = peer.local_addr();
         let mut connected = false;
         if let Some((public_identity, state)) = self.entries.get_mut(&peer_addr) {
@@ -192,7 +198,7 @@ impl Connection {
                 Bytes::from(bincode::serialize(&Message::Contacts(connections))?),
             );
             quic.send_with(user_msg_bytes, 1).await?;
-            return Ok(());
+            return Ok(false);
         } else {
             let _ = self
                 .entries
@@ -204,10 +210,14 @@ impl Connection {
             );
             quic.send(user_msg_bytes).await?;
         }
-        if connected {
+        if connected && !self.is_bootstrapped() {
+            self.set_bootstrapped();
             self.share_routing_table(quic, &self_id.node_id).await?;
+            Ok(true)
+        } else {
+            log::trace!("Our connections: {:?}", &self.entries);
+            Ok(false)
         }
-        Ok(())
     }
 
     /// Disseminate appropriate information on connection failure.
@@ -262,6 +272,16 @@ impl Connection {
             .insert(*socket_addr, (None, ConnectionState::Connecting));
         let _ = quic.connect_to(socket_addr).await?;
         Ok(())
+    }
+
+    /// Checks if a node is bootstrapped to the network
+    pub fn is_bootstrapped(&self) -> bool {
+        self.is_bootstrapped
+    }
+
+    /// Change bootstrap status to true when a node is bootstrapped to the network
+    pub fn set_bootstrapped(&mut self) {
+        self.is_bootstrapped = true;
     }
 
     /// Retrieves the routing table
