@@ -2,25 +2,21 @@ use crate::{
     crypto::hash::Hash, Event, Message, PublicId, Result, RoutingTable, SharedRoutingTable,
 };
 use bytes::Bytes;
+use connection_types::{ConnectionInfo, ConnectionMap, ConnectionState};
 use crossbeam_channel::Sender;
 use qp2p::{Connection as QuicConnection, Endpoint as QuicEndpoint};
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    net::SocketAddr,
-};
-use utils::{ConnectionInfo, ConnectionMap, ConnectionState};
+use std::{collections::hash_map::Entry, net::SocketAddr};
 
+/// Connection-related types
+pub mod connection_types;
 /// Implements a routing table.
 pub mod routing;
-/// Connection-related types
-pub mod utils;
 
 pub(super) const MAX_CONNECTION_LEN: usize = 5;
 
 /// Manages the connection of a node
 pub struct Connection {
     entries: ConnectionMap,
-    active_connections: HashMap<Hash, SocketAddr>,
     routing_table: RoutingTable,
     is_bootstrapped: bool,
 }
@@ -30,7 +26,6 @@ impl Connection {
     pub fn new() -> Self {
         Self {
             entries: Default::default(),
-            active_connections: Default::default(),
             routing_table: Default::default(),
             is_bootstrapped: false,
         }
@@ -84,7 +79,7 @@ impl Connection {
         self_id: &Hash,
     ) -> Result<()> {
         let routing_table = self.routing_table();
-        for socket_addr in self.active_connections().values() {
+        for socket_addr in self.active_connections() {
             let user_msg_bytes = (
                 Bytes::from("Routing information"),
                 Bytes::from(socket_addr.to_string()),
@@ -122,8 +117,6 @@ impl Connection {
                 let _ = std::mem::replace(state, ConnectionState::Connected);
 
                 sender.send(Event::ConnectedTo(*peer_id))?;
-
-                let _ = self.active_connections.insert(peer_id.node_id, peer_addr);
                 self.routing_table.add_direct_connection(&peer_id.node_id);
                 self.routing_table.increment_version();
                 connected = true;
@@ -177,7 +170,6 @@ impl Connection {
 
             if let Some(id) = public_identity {
                 let _ = std::mem::replace(state, ConnectionState::Connected);
-                let _ = self.active_connections.insert(id.node_id, peer_addr);
 
                 sender.send(Event::ConnectedTo(*id))?;
 
@@ -295,8 +287,12 @@ impl Connection {
     }
 
     /// Returns the map of active connections
-    pub fn active_connections(&self) -> &HashMap<Hash, SocketAddr> {
-        &self.active_connections
+    pub fn active_connections(&self) -> Vec<&SocketAddr> {
+        self.entries
+            .iter()
+            .filter(|(_, (_, state))| state == &ConnectionState::Connected)
+            .map(|(socket_addr, _)| socket_addr)
+            .collect::<Vec<_>>()
     }
 }
 

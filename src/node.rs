@@ -1,5 +1,5 @@
 use crate::{
-    connection::utils::{ConnectionInfo, ConnectionMap},
+    connection::connection_types::{ConnectionInfo, ConnectionMap},
     Config, Connection, Event, Identity, Message, Messaging, PublicId, Result,
 };
 use bytes::Bytes;
