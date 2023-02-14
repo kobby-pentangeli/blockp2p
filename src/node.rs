@@ -115,7 +115,7 @@ impl Node {
     }
 
     /// Handle an incoming node event
-    pub fn handle_incoming_event(&mut self) -> Result<()> {
+    pub async fn handle_incoming_event(&mut self) -> Result<()> {
         todo!()
     }
 
