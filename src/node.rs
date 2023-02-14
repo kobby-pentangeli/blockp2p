@@ -125,6 +125,52 @@ impl Node {
         msg: &Bytes,
         quic: &mut QuicConnection,
     ) -> Result<()> {
-        todo!()
+        match bincode::deserialize::<Message>(msg)? {
+            Message::Identification(public_id) => {
+                let deploy_agent = self
+                    .connection
+                    .handle_peer_identification(
+                        &self.identity.public_id(),
+                        peer,
+                        &public_id,
+                        &self.channel_tx,
+                        quic,
+                    )
+                    .await?;
+                if deploy_agent {
+                    self.messaging
+                        .send_agent_message(
+                            Vec::new(),
+                            &self.connection.active_connections(),
+                            false,
+                            quic,
+                        )
+                        .await?;
+                }
+                Ok(())
+            }
+            Message::AgentMessage { payload } => {
+                log::trace!("Got a message from an agent");
+                self.messaging
+                    .handle_agent_message(
+                        &self.identity,
+                        peer,
+                        payload,
+                        &self.connection.active_connections(),
+                        quic,
+                        &self.channel_tx,
+                    )
+                    .await?;
+                Ok(())
+            }
+            Message::Contacts(contacts) => {
+                self.connection.bootstrap(&contacts, peer).await?;
+                Ok(())
+            }
+            message => {
+                log::error!("Peer {:?} sent us: {:?}", peer.local_addr(), &message);
+                Ok(())
+            }
+        }
     }
 }
