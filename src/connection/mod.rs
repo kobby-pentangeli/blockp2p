@@ -151,6 +151,7 @@ impl Connection {
     }
 
     /// Handle a successful incoming connection.
+    /// Returns `true` if an agent is to be deployed.
     pub async fn handle_successful_connection(
         &mut self,
         self_id: &PublicId,

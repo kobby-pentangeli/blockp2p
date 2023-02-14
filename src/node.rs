@@ -116,7 +116,25 @@ impl Node {
 
     /// Handle an incoming node event
     pub async fn handle_incoming_event(&mut self) -> Result<()> {
-        todo!()
+        if let Ok(event) = self.channel_rx.recv() {
+            match event {
+                Event::ConnectedTo(peer) => {
+                    log::trace!("Connected to peer: {:?}", &peer);
+                    // let deploy_agent = self.connection.handle_successful_connection(self_id, peer, sender, quic).await?;
+                    // if deploy_agent {
+                    //     self.messaging.send_agent_message(payload, active_connections, first, quic).await?;
+                    // }
+                    Ok(())
+                }
+                other => {
+                    log::warn!("Unhandled event: {:?}", other);
+                    Ok(())
+                }
+            }
+        } else {
+            log::error!("Error while receiving event");
+            Ok(())
+        }
     }
 
     async fn handle_incoming_message(
