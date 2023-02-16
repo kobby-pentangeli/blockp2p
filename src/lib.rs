@@ -1,5 +1,5 @@
 //! BlockP2P:
-//! Fast blockchain broadcast with scalable peer-to-peer network topology.
+//! Enabling fast blockchain broadcast with scalable peer-to-peer network topology.
 #![forbid(
     arithmetic_overflow,
     mutable_transmutes,
