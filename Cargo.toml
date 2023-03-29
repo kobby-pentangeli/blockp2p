@@ -3,6 +3,9 @@ name = "blockp2p"
 version = "0.1.0"
 description = "Enabling fast blockchain broadcast with scalable p2p network topology"
 authors = ["Kobby Pentangeli <kobbypentangeli@gmail.com>"]
+repository = "https://github.com/kobby-pentangeli/blockp2p"
+readme = "README.md"
+license = "MIT or APACHE-2.0"
 edition = "2021"
 
 [dependencies]
